@@ -7,15 +7,13 @@ const {
   createTour,
   updateTour,
   deleteTour,
+  aliasTopTours,
 } = require('../controller/tourController');
 
 //poarameter middleware
 // router.param('id', checkId);
-
-router.route(`/`)
-.get(getAllTours).
-post(createTour);
-
+router.route('/top-5-cheap').get(aliasTopTours, getAllTours);
+router.route(`/`).get(getAllTours).post(createTour);
 
 router.route(`/:id`).patch(updateTour).delete(deleteTour).get(getTour);
 

@@ -9,7 +9,7 @@ app.set('query parser', 'extended');
 app.use(morgan('dev'));
 app.use(express.json());
 
-//Routes
+//Routes -- mainly resource routes
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 

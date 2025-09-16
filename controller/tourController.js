@@ -1,5 +1,17 @@
 const Tour = require('../models/tourModal');
 
+async function aliasTopTours(req, res, next) {
+  try {
+    req.query.limt = '5';
+    req.query.sort = '-ratingsAveragePrice, price ';
+    req.query.fields = 'name,price, ratingsAverage, summary,difficulty';
+    next();
+  } catch (error) {
+    console.log(error);
+    throw new Error('Something went wrong..');
+  }
+}
+
 // Get all Tours.
 async function getAllTours(req, res) {
   try {
@@ -152,4 +164,5 @@ module.exports = {
   createTour,
   updateTour,
   deleteTour,
+  aliasTopTours,
 };
