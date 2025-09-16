@@ -4,7 +4,7 @@ const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRouter');
 
 const app = express();
-
+app.set('query parser', 'extended');
 // 1. MIDDLEWARES
 app.use(morgan('dev'));
 app.use(express.json());

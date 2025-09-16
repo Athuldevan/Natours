@@ -3,13 +3,39 @@ const Tour = require('../models/tourModal');
 // Get all Tours.
 async function getAllTours(req, res) {
   try {
+    //BUILD QUERY
+
+    // 1) FILTERING
     const queryObj = { ...req.query };
-    const excluded = ['page', 'sort', 'limit', 'fileds'];
+    const excluded = ['page', 'sort', 'limit', 'fields']; // Fixed typo in 'fields'
     excluded.forEach((el) => delete queryObj[el]);
 
-    const query = Tour.find(queryObj);
+    // 2) ADVANCED FILTERING
+    let queryStr = JSON.stringify(queryObj);
+    // Replace gte, gt, lte, lt with MongoDB operators
+    queryStr = queryStr.replace(
+      /\b(gte|gt|lte|lt)\b/g,
+      (matchedWord) => `$${matchedWord}`,
+    );
+
+    // Debug logs
+    console.log('Original query:', req.query);
+    console.log('Filtered query:', queryObj);
+    console.log('Final query:', JSON.parse(queryStr));
+
+    //FILTERING.
+    let query = Tour.find(JSON.parse(queryStr));
+
+    //SORTING
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      query = query.sort(sortBy);
+    }
+
+    //EXECUTE QUERY
     const tours = await query;
 
+    //SENDING RESPONSE
     res.status(200).json({
       status: 'success',
       data: { tours },
