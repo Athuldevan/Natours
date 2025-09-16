@@ -40,6 +40,19 @@ async function getAllTours(req, res) {
       query = query.select('-__v');
     }
 
+    //PAGINATION
+    const page = req.query.page * 1 || 1;
+    const limitValue = req.query.limit * 1 || 100;
+    const skipValue = (page - 1) * limitValue;
+
+    query = query.skip(skipValue).limit(limitValue);
+
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments();
+
+      if (skipValue >= numTours) throw new Error('This page does not Exist');
+    }
+
     //EXECUTE QUERY
     const tours = await query;
 
