@@ -1,12 +1,12 @@
 const Tour = require('../models/tourModal');
 const APIFeatures = require('../utils/apiFeatures');
 
-async function aliasTopTours(req, res, next) {
+async function aliasTopTours(req, res) {
   try {
     req.query.limit = '5';
     req.query.sort = '-ratingsAverage,price';
     req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
-    next();
+    // next();
   } catch (error) {
     console.log(error);
     throw new Error('Something went wrong..');
@@ -15,6 +15,7 @@ async function aliasTopTours(req, res, next) {
 
 // Get all Tours.
 async function getAllTours(req, res) {
+  console.log('get all tours triggered');
   try {
     const features = new APIFeatures(Tour.find(), req.query)
       .filter()
@@ -23,16 +24,17 @@ async function getAllTours(req, res) {
       .pagination();
 
     const tours = await features.query;
+    // const tours = await Tour.find({});
 
     //SENDING RESPONSE
     res.status(200).json({
       status: 'success',
-      data: { tours },
+      data: tours,
     });
   } catch (error) {
     res.status(400).json({
       status: ' failed',
-      message: error,
+      message: error.message,
     });
   }
 }
@@ -114,6 +116,42 @@ async function deleteTour(req, res) {
   }
 }
 
+async function getTourStats(req, res) {
+  try {
+    const stats = await Tour.aggregate([
+      {
+        $match: { ratingsAverage: { $gte: 4.5 } },
+        //Then it go to  next pipeline() operator
+      },
+      {
+        $group: {
+          _id: '$difficulty',
+          numTours: { $sum: 1 },
+          numRatings: { $sum: '$ratingsQunatity' },
+          avgRating: { $avg: '$ratingsAverage' },
+          avgPrice: { $avg: '$price' },
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' },
+        },
+      },
+      {
+        $sort:{avgPrice : 1}
+      }
+    ]);
+    console.log(stats);
+    res.status(200).json({
+      status: 'success',
+      data: stats,
+    });
+  } catch (err) {
+    console.log(err.message);
+    res.status(400).json({
+      status: ' failed',
+      message: err.message,
+    });
+  }
+}
+
 module.exports = {
   getAllTours,
   getTour,
@@ -121,4 +159,5 @@ module.exports = {
   updateTour,
   deleteTour,
   aliasTopTours,
+  getTourStats,
 };
