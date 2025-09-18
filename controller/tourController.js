@@ -135,8 +135,8 @@ async function getTourStats(req, res) {
         },
       },
       {
-        $sort:{avgPrice : 1}
-      }
+        $sort: { avgPrice: 1 },
+      },
     ]);
     console.log(stats);
     res.status(200).json({
@@ -160,4 +160,5 @@ module.exports = {
   deleteTour,
   aliasTopTours,
   getTourStats,
+ 
 };
