@@ -9,7 +9,7 @@ const {
   deleteTour,
   getTourStats,
   aliasTopTours,
-  getMonthlyPlan,
+  
 } = require('../controller/tourController');
 
 //poarameter middleware

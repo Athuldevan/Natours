@@ -67,7 +67,9 @@ const tourSchema = new mongoose.Schema(
     },
 
     startDate: [Date],
+    test: String,
   },
+
   {
     toJSON: { virtuals: true },
   },
@@ -76,6 +78,14 @@ const tourSchema = new mongoose.Schema(
 //creating a virtuals properties
 tourSchema.virtual('duration_weeks').get(function () {
   return this.duration / 7;
+});
+
+//mongoose middleware
+tourSchema.pre('save', function (next) {
+  console.log('will save the document');
+  this.test = 'testing';
+
+  next();
 });
 
 //Creating a new Modal or collection
