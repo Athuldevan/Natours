@@ -13,6 +13,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 //Routes -- mainly resource routes
+app.use('/', userRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 
