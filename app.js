@@ -7,17 +7,15 @@ const globalErrorHandler = require('./controller/errorController');
 
 const app = express();
 app.set('query parser', 'extended');
-
-// 1. MIDDLEWARES
 app.use(morgan('dev'));
 app.use(express.json());
 
-//Routes -- mainly resource routes
-app.use('/', userRouter);
-app.use('/api/v1/tours', tourRouter);
-app.use('/api/v1/users', userRouter);
 
-// Undefiner routes handling Error Middleware
+
+
+app.use('/api/v1/users', userRouter); //authenyicarte users
+app.use('/api/v1/tours', tourRouter);
+
 app.use((req, res, next) => {
   next(new AppError(404, `Can't find the url : ${req.originalUrl}`));
 });

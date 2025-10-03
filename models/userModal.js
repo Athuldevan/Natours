@@ -13,62 +13,77 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'A user must have a email'],
     unique: true,
-    isLowerCase: true,
+    lowercase: true,
     validate: {
       validator: (email) => validator.isEmail(email),
-      message: 'please enter  a valid email',
+      message: 'Please enter a valid email',
     },
   },
+
+  role: {
+    type: String,
+    enum: ['user', 'guide', 'lead-guide', 'admin'],
+    default: 'user',
+  },
+
   password: {
     type: String,
     minLength: 6,
     required: [true, 'A user must have a password'],
-    unique: [true, 'This password is already taken'],
     validate: {
       validator: (password) => validator.isStrongPassword(password),
       message: 'Please enter a strong password',
     },
-    select: false,
   },
 
   passwordConfirm: {
     type: String,
     required: [true, 'Please confirm your password'],
     validate: {
-      type: String,
       validator: function (el) {
         return el === this.password;
       },
-      message: "Passwords doesn't match.",
+      message: "Passwords don't match.",
     },
   },
+  passwordChangedAt: Date,
 
   photo: {
     type: String,
     validate: {
       validator: (url) => validator.isURL(url),
-      message: 'Please enter  a valid url',
+      message: 'Please enter a valid URL',
     },
   },
 });
 
 ////////////////////////////////////////////////////
-//Encrypt or HASH the password before saving - creating a new document or updating a document field.
+// Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (this.isModified('password') === false) return next();
+  if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 8);
-
-  //Delete confirm password field
   this.passwordConfirm = undefined;
+  next();
 });
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////
 
-userSchema.methods.isPasswordCorrect = async function (
-  candidatePassworsd,
-  userPassword,
-) {
-  return await bcrypt.compare(candidatePassworsd, userPassword);
+// To update passwordChangedAt property for the user
+userSchema.methods.isPasswordCorrect = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
 };
-const User = new mongoose.model('User', userSchema);
+
+//To check if user changed password after the token is issued
+userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10,
+    );
+    return JWTTimestamp < changedTimestamp;
+  }
+  return false;
+};
+
+const User = mongoose.model('User', userSchema);
 
 module.exports = User;

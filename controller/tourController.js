@@ -15,7 +15,6 @@ async function aliasTopTours(req, res) {
 
 // Get all Tours.
 async function getAllTours(req, res) {
-  console.log('get all tours triggered');
   try {
     const features = new APIFeatures(Tour.find(), req.query)
       .filter()
@@ -160,5 +159,4 @@ module.exports = {
   deleteTour,
   aliasTopTours,
   getTourStats,
- 
 };

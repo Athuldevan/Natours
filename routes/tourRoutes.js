@@ -1,5 +1,6 @@
 const express = require('express');
 
+const { protect, restrictTo } = require('../controller/authController');
 const router = express.Router();
 const {
   getAllTours,
@@ -9,16 +10,19 @@ const {
   deleteTour,
   getTourStats,
   aliasTopTours,
-  
 } = require('../controller/tourController');
 
 //poarameter middleware
 // router.param('id', checkId);
 
-router.route('/').get(getAllTours).post(createTour);
+router.route('/').get(protect, getAllTours).post(createTour);
 router.route('/top-5-cheap').get(aliasTopTours, getAllTours);
 router.route('/tour-stats').get(getTourStats);
 
-router.route(`/:id`).patch(updateTour).delete(deleteTour).get(getTour);
+router
+  .route(`/:id`)
+  .patch(updateTour)
+  .delete(protect, restrictTo('admin'), deleteTour)
+  .get(getTour);
 
 module.exports = router;

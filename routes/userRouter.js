@@ -10,11 +10,12 @@ const {
 } = require('../controller/userController');
 
 const router = express.Router();
-router.route('/signup').post(signup);
-router.route('/login').post(login)
-
 router.route('/').get(getAllUsers).post(createUser);
 
-router.route('/:id').get(getUser).patch(updateUser).delete(deleteUser);
+router.route('/users/:id').get(getUser).patch(updateUser).delete(deleteUser);
+
+//signup and login
+router.route('/signup').post(signup);
+router.route('/login').post(login);
 
 module.exports = router;
