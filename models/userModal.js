@@ -98,15 +98,13 @@ userSchema.pre('save', function (next) {
 
 //RESER PASSWORD METHOD
 userSchema.methods.createResetPasswordToken = function () {
+  //genrating a random number tokn using crypto module
   const resetToken = crypto.randomBytes(32).toString('hex');
   this.passwordResetToken = crypto
     .createHash('sha256')
     .update(resetToken)
     .digest('hex');
-  this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000; // 10 minutes expires in
-
-  console.log({ resetToken });
-  console.log(this.passwordResetToken);
+  this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000; // 10 minutes expires
   return resetToken;
 };
 

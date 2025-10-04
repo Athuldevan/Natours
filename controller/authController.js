@@ -1,7 +1,8 @@
-const crypto = require('node:crypto')
+const crypto = require('node:crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModal');
 const sendEmail = require('../utils/email');
+
 //Sign up
 async function signup(req, res) {
   try {
@@ -76,7 +77,7 @@ async function protect(req, res, next) {
     ) {
       token = req.headers.authorization.split(' ')[1];
     }
-    console.log(token);
+
     if (!token) {
       return res.status(403).json({
         status: 'failed',
@@ -135,35 +136,25 @@ function restrictTo(...roles) {
   };
 }
 
-//FORGOT
-//  PASSWORD
+//FORGOT  PASSWORD
 async function forgotPassword(req, res) {
   console.log('🔥 forgotPassword route hit');
 
   try {
-  
-
     const { email } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-     
       return res
         .status(404)
         .json({ status: 'failed', message: 'No such user found' });
     }
 
-   
-
     // Generate reset token
     const resetPasswordToken = user.createResetPasswordToken();
     await user.save({ validateBeforeSave: false });
 
- 
-
     const resetUrl = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetPasswordToken}`;
     const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetUrl}\n\nIf you didn't request a password reset, please ignore this email.`;
-
-  
 
     await sendEmail({
       email: user.email,
@@ -171,12 +162,10 @@ async function forgotPassword(req, res) {
       message,
     });
 
-
     return res.status(200).json({
       status: 'success',
       message: 'Token sent to email!',
     });
-    
   } catch (err) {
     res.status(400).json({
       status: 'failed',
@@ -188,14 +177,14 @@ async function forgotPassword(req, res) {
 //RESET password
 const resetPassword = async function (req, res, next) {
   try {
-    const hasedToken =  crypto
+    const hashedToken = crypto
       .createHash('sha256')
       .update(req.params.token)
       .digest('hex');
 
     // 1) Getting the user based on the toke
     const user = await User.findOne({
-      passwordResetToken: hasedToken,
+      passwordResetToken: hashedToken,
       passwordResetTokenExpires: { $gt: Date.now() },
     });
     // 2) If token has not expired and there  is a user , set new password
@@ -216,8 +205,6 @@ const resetPassword = async function (req, res, next) {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
       expiresIn: '90d',
     });
-    //3)update the changedPasword property for the cureent user;
-    //4)log the user in
 
     res.status(200).json({
       status: 'success',
@@ -230,6 +217,61 @@ const resetPassword = async function (req, res, next) {
     });
   }
 };
+
+//Update the password.
+const updatePassword = async function (req, res, next) {
+  try {
+    const { currentPassword, newPassword, newPasswordConfirm } = req.body;
+
+   
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'User not found. Please login first.',
+      });
+    }
+
+    // 2) Validate input
+    if (!currentPassword || !newPassword || !newPasswordConfirm) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Please provide current, new, and confirm password.',
+      });
+    }
+
+    // 3) Check if current password is correct
+    const isPasswordCorrect = await user.isPasswordCorrect(currentPassword);
+    if (!isPasswordCorrect) {
+      return res.status(401).json({
+        status: 'fail',
+        message: 'Your current password is incorrect.',
+      });
+    }
+
+    // 4) Update password
+    user.password = newPassword;
+    user.passwordConfirm = newPasswordConfirm;
+    await user.save(); 
+
+    // 5) Issue new JWT
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
+      expiresIn: '90d',
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Password updated successfully',
+      token,
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err.message,
+    });
+  }
+};
+
 module.exports = {
   signup,
   login,
@@ -237,4 +279,5 @@ module.exports = {
   restrictTo,
   forgotPassword,
   resetPassword,
+  updatePassword,
 };
