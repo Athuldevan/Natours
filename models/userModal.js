@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
@@ -46,6 +47,11 @@ const userSchema = new mongoose.Schema({
       message: "Passwords don't match.",
     },
   },
+
+  passwordResetToken: String,
+
+  passwordResetTokenExpires: Date,
+
   passwordChangedAt: Date,
 
   photo: {
@@ -57,7 +63,6 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-////////////////////////////////////////////////////
 // Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
@@ -82,6 +87,27 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
     return JWTTimestamp < changedTimestamp;
   }
   return false;
+};
+
+// changing the password changinged date in the userschema modal
+userSchema.pre('save', function (next) {
+  if (!this.isModified('password') || this.isNew) next();
+  this.passwordChangedAt = Date.now() - 1000; // 1 second back
+  next();
+});
+
+//RESER PASSWORD METHOD
+userSchema.methods.createResetPasswordToken = function () {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+  this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000; // 10 minutes expires in
+
+  console.log({ resetToken });
+  console.log(this.passwordResetToken);
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);

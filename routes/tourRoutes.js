@@ -22,7 +22,7 @@ router.route('/tour-stats').get(getTourStats);
 router
   .route(`/:id`)
   .patch(updateTour)
-  .delete(protect, restrictTo('admin'), deleteTour)
+  .delete(protect, restrictTo('admin', 'lead-guide'), deleteTour)
   .get(getTour);
 
 module.exports = router;

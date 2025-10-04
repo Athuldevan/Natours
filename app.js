@@ -13,14 +13,14 @@ app.use(express.json());
 
 
 
-app.use('/api/v1/users', userRouter); //authenyicarte users
+app.use('/api/v1/users', userRouter)
 app.use('/api/v1/tours', tourRouter);
 
 app.use((req, res, next) => {
   next(new AppError(404, `Can't find the url : ${req.originalUrl}`));
 });
 
-//Global error handling middleware
-app.use(globalErrorHandler);
+// //Global error handling middleware
+// app.use(globalErrorHandler);
 
 module.exports = app;

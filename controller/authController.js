@@ -1,7 +1,7 @@
+const crypto = require('node:crypto')
 const jwt = require('jsonwebtoken');
-
 const User = require('../models/userModal');
-
+const sendEmail = require('../utils/email');
 //Sign up
 async function signup(req, res) {
   try {
@@ -116,7 +116,7 @@ async function protect(req, res, next) {
   }
 }
 
-//authorization middleware
+//Authorization middleware
 function restrictTo(...roles) {
   return (req, res, next) => {
     //roles is an array ['admin', 'guit]
@@ -135,4 +135,106 @@ function restrictTo(...roles) {
   };
 }
 
-module.exports = { signup, login, protect, restrictTo };
+//FORGOT
+//  PASSWORD
+async function forgotPassword(req, res) {
+  console.log('🔥 forgotPassword route hit');
+
+  try {
+  
+
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+     
+      return res
+        .status(404)
+        .json({ status: 'failed', message: 'No such user found' });
+    }
+
+   
+
+    // Generate reset token
+    const resetPasswordToken = user.createResetPasswordToken();
+    await user.save({ validateBeforeSave: false });
+
+ 
+
+    const resetUrl = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetPasswordToken}`;
+    const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetUrl}\n\nIf you didn't request a password reset, please ignore this email.`;
+
+  
+
+    await sendEmail({
+      email: user.email,
+      subject: 'Your password reset token (valid for 10 minutes)',
+      message,
+    });
+
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Token sent to email!',
+    });
+    
+  } catch (err) {
+    res.status(400).json({
+      status: 'failed',
+      message: err.message,
+    });
+  }
+}
+
+//RESET password
+const resetPassword = async function (req, res, next) {
+  try {
+    const hasedToken =  crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    // 1) Getting the user based on the toke
+    const user = await User.findOne({
+      passwordResetToken: hasedToken,
+      passwordResetTokenExpires: { $gt: Date.now() },
+    });
+    // 2) If token has not expired and there  is a user , set new password
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: 'failed', message: 'token expired' });
+    }
+
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.password;
+
+    user.passwordResetToken = undefined;
+    user.passwordResetTokenExpires = undefined;
+    await user.save();
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
+      expiresIn: '90d',
+    });
+    //3)update the changedPasword property for the cureent user;
+    //4)log the user in
+
+    res.status(200).json({
+      status: 'success',
+      token,
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'failed',
+      message: err.message,
+    });
+  }
+};
+module.exports = {
+  signup,
+  login,
+  protect,
+  restrictTo,
+  forgotPassword,
+  resetPassword,
+};
