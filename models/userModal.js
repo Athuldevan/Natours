@@ -80,21 +80,23 @@ userSchema.methods.isPasswordCorrect = async function (candidatePassword) {
 //To check if user changed password after the token is issued
 userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
-    const changedTimestamp = parseInt(
-      this.passwordChangedAt.getTime() / 1000,
-      10,
-    );
+    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
     return JWTTimestamp < changedTimestamp;
   }
   return false;
 };
 
+
 // changing the password changinged date in the userschema modal
+// Update passwordChangedAt before saving if password is modified
 userSchema.pre('save', function (next) {
-  if (!this.isModified('password') || this.isNew) next();
-  this.passwordChangedAt = Date.now() - 1000; // 1 second back
+  if (!this.isModified('password') || this.isNew) return next();
+
+  // Subtract 1 second to prevent token issues
+  this.passwordChangedAt = Date.now() - 1000;
   next();
 });
+
 
 //RESER PASSWORD METHOD
 userSchema.methods.createResetPasswordToken = function () {
