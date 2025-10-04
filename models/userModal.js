@@ -61,8 +61,14 @@ const userSchema = new mongoose.Schema({
       message: 'Please enter a valid URL',
     },
   },
-});
 
+  actice: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
+});
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
@@ -70,7 +76,12 @@ userSchema.pre('save', async function (next) {
   this.passwordConfirm = undefined;
   next();
 });
-////////////////////////////////////////////////////
+
+//Middleware t o fetch only the user wherer find = true befor find quiery
+userSchema.pre(/^find/, function (next) {
+  this.find({ active: true });
+  next();
+});
 
 // To update passwordChangedAt property for the user
 userSchema.methods.isPasswordCorrect = async function (candidatePassword) {
@@ -80,12 +91,14 @@ userSchema.methods.isPasswordCorrect = async function (candidatePassword) {
 //To check if user changed password after the token is issued
 userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
-    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10,
+    );
     return JWTTimestamp < changedTimestamp;
   }
   return false;
 };
-
 
 // changing the password changinged date in the userschema modal
 // Update passwordChangedAt before saving if password is modified
@@ -96,7 +109,6 @@ userSchema.pre('save', function (next) {
   this.passwordChangedAt = Date.now() - 1000;
   next();
 });
-
 
 //RESER PASSWORD METHOD
 userSchema.methods.createResetPasswordToken = function () {

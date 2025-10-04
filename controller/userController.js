@@ -56,7 +56,7 @@ async function updateMe(req, res) {
       { name, email },
       { new: true, runValidators: true },
     );
-    
+
     if (!user) {
       return res.status(404).json({
         status: 'fail',
@@ -76,6 +76,22 @@ async function updateMe(req, res) {
   }
 }
 
+//Delete user profiel
+async function deleteMe(req, res) {
+  try {
+    await User.findByIdAndUpdate(req.user.id, { active: false });
+
+    res.status(203).json({
+      status: 'success',
+      data: null,
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'Succes',
+      message: err.message,
+    });
+  }
+}
 module.exports = {
   getAllUsers,
   getUser,
@@ -83,4 +99,5 @@ module.exports = {
   updateUser,
   deleteUser,
   updateMe,
+  deleteMe,
 };
