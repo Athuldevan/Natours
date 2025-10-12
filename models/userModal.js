@@ -79,11 +79,10 @@ userSchema.pre('save', async function (next) {
 
 //Middleware t o fetch only the user wherer find = true befor find quiery
 userSchema.pre(/^find/, function (next) {
-  this.find({ active: true });
+  this.find({ actice: true });
   next();
 });
 
-// To update passwordChangedAt property for the user
 userSchema.methods.isPasswordCorrect = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
@@ -100,19 +99,16 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   return false;
 };
 
-// changing the password changinged date in the userschema modal
 // Update passwordChangedAt before saving if password is modified
 userSchema.pre('save', function (next) {
   if (!this.isModified('password') || this.isNew) return next();
 
-  // Subtract 1 second to prevent token issues
   this.passwordChangedAt = Date.now() - 1000;
   next();
 });
 
 //RESER PASSWORD METHOD
 userSchema.methods.createResetPasswordToken = function () {
-  //genrating a random number tokn using crypto module
   const resetToken = crypto.randomBytes(32).toString('hex');
   this.passwordResetToken = crypto
     .createHash('sha256')

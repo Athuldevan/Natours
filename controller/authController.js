@@ -22,6 +22,8 @@ async function signup(req, res) {
       },
     });
   } catch (err) {
+    console.log(err.stack);
+    console.log(err.message);
     res.status(404).json({
       status: 'failed',
       message: err,
@@ -33,25 +35,35 @@ async function signup(req, res) {
 async function login(req, res) {
   try {
     const { password, email } = req.body;
-    // 1) Checking if email and password exist.
     if (!email || !password)
-      throw new Error('No user and email an d password exists.');
+      throw new Error('No user and email and password exists.');
 
     // 2) checking is user exixts &&  wheather the password id valid.
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email });
+    console.log(email, user);
     if (!user) {
-      throw new Error('User dosent exisit');
+      return res.status(404).json({
+        status: 'failed',
+        message: 'No such user exists',
+      });
     }
     const isPasswordValid = await user.isPasswordCorrect(password);
 
-    if (!user || !isPasswordValid)
-      throw new Error('Incorrect Email or password');
+    if (!isPasswordValid) throw new Error('Incorrect Email or password');
 
     //3) if everything is ok send TOKEN to the client
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
       expiresIn: '90d', // optional
     });
+
+    const cookieOption = {
+      expiresIn: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN),
+      secure: false,
+      httpOnly: false,
+    };
+
+    res.cookie('jwt', token, cookieOption);
 
     res.status(200).json({
       token, //Sending token to the client
@@ -138,8 +150,6 @@ function restrictTo(...roles) {
 
 //FORGOT  PASSWORD
 async function forgotPassword(req, res) {
-  console.log('🔥 forgotPassword route hit');
-
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
@@ -223,7 +233,6 @@ const updatePassword = async function (req, res, next) {
   try {
     const { currentPassword, newPassword, newPasswordConfirm } = req.body;
 
-   
     const user = await User.findById(req.user.id).select('+password');
     if (!user) {
       return res.status(404).json({
@@ -252,7 +261,7 @@ const updatePassword = async function (req, res, next) {
     // 4) Update password
     user.password = newPassword;
     user.passwordConfirm = newPasswordConfirm;
-    await user.save(); 
+    await user.save();
 
     // 5) Issue new JWT
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
